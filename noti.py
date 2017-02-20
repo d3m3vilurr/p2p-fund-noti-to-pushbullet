@@ -17,6 +17,7 @@ class Channel(object):
 
 class TankerFundChannel(Channel):
     TANKER_FUND_ITEM_LIST = 'https://api.tanker.fund/product/list/'
+    TANKER_FUND_ITEM_DETAIL = 'https://tanker.fund/#/product/detail/%s'
     STATUS = dict(RESERVE=(1,),
                   OPEN=(2, 3),
                   CLOSE=(4, 5, 6, 7, 8))
@@ -33,9 +34,10 @@ class TankerFundChannel(Channel):
             if not datas.get('products'):
                 raise StopIteration
             for item in datas.get('products'):
+                url = TankerFundChannel.TANKER_FUND_ITEM_DETAIL % item['id']
                 yield dict(id=str(item['id']),
                            title=item['title'],
-                           description=item['short_description'])
+                           description=item['short_description'] + ' ' + url)
                 curr += 1
                 if self.max_item <= 0:
                     continue
