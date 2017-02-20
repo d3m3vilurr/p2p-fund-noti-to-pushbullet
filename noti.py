@@ -103,6 +103,42 @@ class RoofFundChannel(Channel):
                     raise StopIteration
 
 
+class VillyChannel(Channel):
+    VILLY_FUND_URL = 'https://www.villy.co.kr'
+    VILLY_FUND_ITEM_LIST = 'https://www.villy.co.kr/product/fundList/total/realestate'
+    VILLY_FUND_XPATHS = {
+        'ITEMS': '//div[@class="row total-deal-row"]/div[@class="col-sm-6 col-md-4"]/a',
+        'TITLE': './/div[@class="deal-card-detail"]/div[1]/h3',
+        'DESC': './/div[@class="deal-card-detail"]/div[1]/div/p',
+    }
+
+    def __iter__(self):
+        session = requests.Session()
+        curr = 0
+        page = 0
+        while True:
+            page += 1
+            params = dict(page=page)
+            res = session.get(VillyChannel.VILLY_FUND_ITEM_LIST, params=params)
+            elem = lxml.html.fromstring(res.text)
+            products = elem.xpath(VillyChannel.VILLY_FUND_XPATHS['ITEMS'])
+            for product in products:
+                title = product.xpath(VillyChannel.VILLY_FUND_XPATHS['TITLE'])[0] \
+                        .text_content().strip()
+                url = product.xpath('./@href')[0]
+                desc =product.xpath(VillyChannel.VILLY_FUND_XPATHS['DESC'])[0] \
+                        .text_content().strip()
+                yield dict(id=url.split('/')[-1],
+                           title=title,
+                           description=desc + ' ' + VillyChannel.VILLY_FUND_URL + url)
+                curr += 1
+                if self.max_item <= 0:
+                    continue
+                if curr >= self.max_item:
+                    raise StopIteration
+
+
+
 bullet = PushBullet(CONFIG.PUSHBULLET_API)
 if CONFIG.PUSHBULLET_CHANNEL:
     bullet = bullet.get_channel(CONFIG.PUSHBULLET_CHANNEL)
@@ -115,6 +151,7 @@ channels = [
     (u'탱커펀드', TankerFundChannel),
     (u'테라펀딩', TeraFundChannel),
     (u'루프펀딩', RoofFundChannel),
+    (u'빌리', VillyChannel),
 ]
 
 def main():
