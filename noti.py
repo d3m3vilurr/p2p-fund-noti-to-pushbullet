@@ -75,6 +75,32 @@ class TeraFundChannel(Channel):
                     raise StopIteration
 
 
+class RoofFundChannel(Channel):
+    ROOF_FUND_ITEM_LIST = 'https://www.rooffunding.com/v1/projects/page/%d'
+    ROOF_FUND_ITEM_DETAIL = 'https://www.rooffunding.com/offers#/detail/%s'
+
+    def __iter__(self):
+        session = requests.Session()
+        curr = 0
+        page = 0
+        while True:
+            page += 1
+            res = session.get(RoofFundChannel.ROOF_FUND_ITEM_LIST % page)
+            datas = json.loads(res.text)
+            if not datas.get('projects'):
+                raise StopIteration
+            for item in datas.get('projects'):
+                url = RoofFundChannel.ROOF_FUND_ITEM_DETAIL % item['_id']
+                yield dict(id=str(item['_id']),
+                           title=item['title'],
+                           description=item['address'] + ' ' + url)
+                curr += 1
+                if self.max_item <= 0:
+                    continue
+                if curr >= self.max_item:
+                    raise StopIteration
+
+
 bullet = PushBullet(CONFIG.PUSHBULLET_API)
 if CONFIG.PUSHBULLET_CHANNEL:
     bullet = bullet.get_channel(CONFIG.PUSHBULLET_CHANNEL)
@@ -85,7 +111,8 @@ def push(title, message):
 
 channels = [
     (u'탱커펀드', TankerFundChannel),
-    (u'테라펀드', TeraFundChannel),
+    (u'테라펀딩', TeraFundChannel),
+    (u'루프펀딩', RoofFundChannel),
 ]
 
 def main():
