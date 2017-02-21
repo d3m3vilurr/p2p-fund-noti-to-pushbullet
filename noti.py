@@ -138,6 +138,37 @@ class VillyChannel(Channel):
                     raise StopIteration
 
 
+class SoditChannel(Channel):
+    SODIT_FUND_URL = 'https://www.sodit.co.kr'
+    SODIT_FUND_ITEM_LIST = 'https://www.sodit.co.kr/investment/investment-list.php'
+    SODIT_FUND_XPATHS = {
+        'ITEMS': '//div[@class="grid-offer"]/div[@class="grid-offer-front"]/a',
+        'TITLE': './/h4[@class="grid-offer-title"]',
+    }
+
+    def __iter__(self):
+        session = requests.Session()
+        curr = 0
+        page = 0
+        while True:
+            page += 1
+            params = dict(page=page)
+            res = session.get(SoditChannel.SODIT_FUND_ITEM_LIST, params=params)
+            elem = lxml.html.fromstring(res.text)
+            products = elem.xpath(SoditChannel.SODIT_FUND_XPATHS['ITEMS'])
+            for product in products:
+                title = product.xpath(SoditChannel.SODIT_FUND_XPATHS['TITLE'])[0] \
+                        .text_content().strip()
+                url = product.xpath('./@href')[0]
+                yield dict(id=url.split('id=')[-1],
+                           title=title,
+                           description=SoditChannel.SODIT_FUND_URL + url)
+                curr += 1
+                if self.max_item <= 0:
+                    continue
+                if curr >= self.max_item:
+                    raise StopIteration
+
 
 bullet = PushBullet(CONFIG.PUSHBULLET_API)
 if CONFIG.PUSHBULLET_CHANNEL:
@@ -152,6 +183,7 @@ channels = [
     (u'테라펀딩', TeraFundChannel),
     (u'루프펀딩', RoofFundChannel),
     (u'빌리', VillyChannel),
+    (u'소딧', SoditChannel),
 ]
 
 def main():
