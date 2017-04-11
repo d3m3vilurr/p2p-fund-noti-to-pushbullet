@@ -67,6 +67,8 @@ class TeraFundChannel(Channel):
                 link = product.xpath(TeraFundChannel.TERA_FUND_XPATHS['LINK'])[0]
                 title = link.text_content().strip()
                 url = link.xpath('./@href')[0]
+                if 'javascript:alert' in url:
+                    continue
                 yield dict(id=url.split('/')[-1],
                            title=title,
                            description=TeraFundChannel.TERA_FUND_URL + url)
@@ -200,7 +202,7 @@ def main():
             push(chan_name + ': ' + item['title'], item['description'])
             pushed.append(item['id'])
         with open(pushed_fn, 'w') as w:
-                w.write('\n'.join(pushed[-100:]))
+            w.write('\n'.join(pushed[-100:]))
 
 if __name__ == '__main__':
     main()
