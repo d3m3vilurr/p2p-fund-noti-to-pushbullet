@@ -142,16 +142,18 @@ class VillyChannel(Channel):
 
 class SoditChannel(Channel):
     SODIT_FUND_URL = 'https://www.sodit.co.kr'
-    SODIT_FUND_ITEM_LIST = 'https://www.sodit.co.kr/investment/investment-list.php'
+    SODIT_FUND_ITEM_LIST = 'https://www.sodit.co.kr/investment/list.php'
     SODIT_FUND_XPATHS = {
-        'ITEMS': '//div[@class="grid-offer"]/div[@class="grid-offer-front"]/a',
-        'TITLE': './/h4[@class="grid-offer-title"]',
+        'ITEMS': '//section//div[@class="card"]',
+        'TITLE': './/h4',
+        'URL': './a/@href',
     }
 
     def __iter__(self):
         session = requests.Session()
         curr = 0
         page = 0
+        checked = []
         while True:
             page += 1
             params = dict(page=page)
@@ -161,8 +163,12 @@ class SoditChannel(Channel):
             for product in products:
                 title = product.xpath(SoditChannel.SODIT_FUND_XPATHS['TITLE'])[0] \
                         .text_content().strip()
-                url = product.xpath('./@href')[0]
-                yield dict(id=url.split('id=')[-1],
+                url = product.xpath(SoditChannel.SODIT_FUND_XPATHS['URL'])[0]
+                uid = url.split('id=')[-1]
+                if uid in checked:
+                    continue
+                checked.append(uid)
+                yield dict(id=uid,
                            title=title,
                            description=SoditChannel.SODIT_FUND_URL + url)
                 curr += 1
