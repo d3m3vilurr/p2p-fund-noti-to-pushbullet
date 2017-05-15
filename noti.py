@@ -49,8 +49,9 @@ class TeraFundChannel(Channel):
     TERA_FUND_URL = 'https://www.terafunding.com'
     TERA_FUND_INVEST = 'https://www.terafunding.com/Invest'
     TERA_FUND_XPATHS = {
-        'ITEMS': '//div[@id="contents_wraper"]//ul[@class="row grid-block-v2"]/li',
-        'LINK': './/div[@class="caption_goods"][1]/h3[@class="mgoods2-tit"][1]//a'
+        'ITEMS': '//div[@id="funditems"]/div[@class="funditem js-link"]',
+        'LINK': './@data-url',
+        'TITLE': './@title',
     }
 
     def __iter__(self):
@@ -65,13 +66,12 @@ class TeraFundChannel(Channel):
             products = elem.xpath(TeraFundChannel.TERA_FUND_XPATHS['ITEMS'])
             for product in products:
                 link = product.xpath(TeraFundChannel.TERA_FUND_XPATHS['LINK'])[0]
-                title = link.text_content().strip()
-                url = link.xpath('./@href')[0]
-                if 'javascript:alert' in url:
+                title = product.xpath(TeraFundChannel.TERA_FUND_XPATHS['TITLE'])[0]
+                if 'javascript:alert' in link:
                     continue
-                yield dict(id=url.split('/')[-1],
+                yield dict(id=link.split('/')[-1],
                            title=title,
-                           description=TeraFundChannel.TERA_FUND_URL + url)
+                           description=TeraFundChannel.TERA_FUND_URL + link)
                 curr += 1
                 if self.max_item <= 0:
                     continue
