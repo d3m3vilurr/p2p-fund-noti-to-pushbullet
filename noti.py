@@ -48,11 +48,7 @@ class TankerFundChannel(Channel):
 class TeraFundChannel(Channel):
     TERA_FUND_URL = 'https://www.terafunding.com'
     TERA_FUND_INVEST = 'https://www.terafunding.com/Invest'
-    TERA_FUND_XPATHS = {
-        'ITEMS': '//div[@id="funditems"]/div[@class="funditem js-link"]',
-        'LINK': './@data-url',
-        'TITLE': './@title',
-    }
+    TERA_FUND_DETAIL = TERA_FUND_INVEST + '/Detail/'
 
     def __iter__(self):
         session = requests.Session()
@@ -60,18 +56,16 @@ class TeraFundChannel(Channel):
         page = 0
         while True:
             page += 1
-            params = dict(page_no=page)
+            params = dict(page_no=page, returnType='json')
             res = session.get(TeraFundChannel.TERA_FUND_INVEST, params=params)
-            elem = lxml.html.fromstring(res.text)
-            products = elem.xpath(TeraFundChannel.TERA_FUND_XPATHS['ITEMS'])
+            result = json.loads(res.text)
+            # TODO check result Status
+            products = json.loads(result['Message'])
             for product in products:
-                link = product.xpath(TeraFundChannel.TERA_FUND_XPATHS['LINK'])[0]
-                title = product.xpath(TeraFundChannel.TERA_FUND_XPATHS['TITLE'])[0]
-                if 'javascript:alert' in link:
-                    continue
-                yield dict(id=link.split('/')[-1],
+                title = product['Title']
+                yield dict(id=product['FundsID'],
                            title=title,
-                           description=TeraFundChannel.TERA_FUND_URL + link)
+                           description=TeraFundChannel.TERA_FUND_DETAIL + product['FundsID'])
                 curr += 1
                 if self.max_item <= 0:
                     continue
